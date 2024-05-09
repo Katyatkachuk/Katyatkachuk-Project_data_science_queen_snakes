@@ -2,7 +2,6 @@ import pickle
 import numpy as np
 import cv2  # Used for image operations if necessary
 
-# Assume that extract_features.py is in the same directory and it defines a function named extract_features
 from extract_features import extract_features
 
 def classify(img, mask):
