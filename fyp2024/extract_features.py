@@ -30,7 +30,10 @@ def extract_features(image,mask):
     features[1] = color_analysis(image,mask)
     
     # Feature 3: Dots and Globules
-    features[2] = detect_dots(image,mask)
+    if (features[1] >= 2):
+        features[2] = detect_dots(image,mask)
+    else :
+        features[2] = 0
 
     # Feature 4: Compactness
     features[3] = calculate_compactness(mask)
