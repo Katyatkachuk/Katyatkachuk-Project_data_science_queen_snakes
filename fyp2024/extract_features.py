@@ -316,9 +316,7 @@ def process_images(file_data, path_image, path_mask, feature_names):
             # Read the image and mask
             im = cv2.imread(file_image)
             mask = cv2.imread(file_image_mask, cv2.IMREAD_GRAYSCALE)
-            if im.shape[:2] != mask.shape[:2]:
-                print(f"Skipping image {image_id[i]}: Image and mask dimensions do not match.")
-                continue
+
             # Check if the mask has any contour other than just a black background
             contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             if len(contours) == 0:
