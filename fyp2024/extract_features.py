@@ -1,7 +1,11 @@
-import cv2
+
 import numpy as np
+import cv2
+
+from statistics import mean
 import os
 import csv
+from scipy import ndimage
 from sklearn.cluster import KMeans
 import pandas as pd
 from os.path import exists
@@ -24,7 +28,7 @@ def extract_features(image,mask):
     features = np.zeros(num_features, dtype=np.float16)
     
     # Feature 1: Assymetry
-    features[0] = check_symmetry(mask)
+    features[0] = calculate_symmetry_level(check_symmetry(mask))
     
     # Feature 2: Colours
     features[1] = color_analysis(image,mask)
@@ -41,7 +45,7 @@ def extract_features(image,mask):
     return features
 
 
-def check_symmetry(img):
+def check_symmetry(mask):
 
     """
     Args:
@@ -51,28 +55,120 @@ def check_symmetry(img):
         level of assymetry from 1 to 3
 
     """
+    # Load the mask
+    #mask = cv2.imread(image, cv2.IMREAD_GRAYSCALE)
 
-    h, w = img.shape
-    left_half = img[:, :w//2]
-    right_half = img[:, w//2:]
-    right_half_flipped = cv2.flip(right_half, 1)
-    top_half = img[:h//2, :]
-    bottom_half = img[h//2:, :]
-    bottom_half_flipped = cv2.flip(bottom_half, 0)
-    def is_similar(part_a, part_b, threshold=5):
-        if part_a.shape != part_b.shape:
-            return False
-        diff = cv2.absdiff(np.float32(part_a), np.float32(part_b))
-        percent_diff = (np.sum(diff) / (255 * diff.size)) * 100
-        return percent_diff < threshold
-    horizontal_sym = is_similar(left_half, right_half_flipped)
-    vertical_sym = is_similar(top_half, bottom_half_flipped)
-    if horizontal_sym and vertical_sym:
-        return "1"
-    elif horizontal_sym or vertical_sym:
-        return "2"
+    area = np.sum(mask)  # defect area
+    com = ndimage.center_of_mass(mask)  # find the center of mass
+    com = (int(com[0]), int(com[1]))  # convert coordinates to integers
+
+    # Create a mask with the defect contour
+    brush = ndimage.generate_binary_structure(2, 1)  # create a brush for erosion
+    eroded = ndimage.binary_erosion(mask, brush)  # mask after erosion
+    border = mask - eroded  # defect contour
+    rows, cols = np.nonzero(border)  # find contour coordinates
+    coords = zip(rows, cols)  # collect coordinates
+
+    # Find the distance from the center of mass to each contour pixel
+    dist_list = []
+    for r, c in coords:
+        dist_list.append(int(np.sqrt((r - com[0]) ** 2 + (c - com[1]) ** 2)))  # Euclidean distance
+
+    # Maximum distance from the center of mass to the mask edge + 10 pixels
+    max_dist = max(dist_list) + 10
+
+    # Crop the mask to a square with a side of max_dist+10 with the center at com
+    r1 = com[0] - max_dist  # lower boundary for row
+    r2 = com[0] + max_dist  # upper boundary for row
+    c1 = com[1] - max_dist  # left boundary for column
+    c2 = com[1] + max_dist  # right boundary for column
+
+    # If any of the boundaries go beyond the image boundaries,
+    # add empty rows/columns to the mask up to a distance of max_dist+10
+    # this keeps com in the center and the mask square
+    if r1 < 0:
+        mask = np.append(np.zeros([abs(r1), mask.shape[1]]), mask, 0)
+        r2 += abs(r1)
+        r1 = 0
+    if c1 < 0:
+        mask = np.append(np.zeros([mask.shape[0], abs(c1)]), mask, 1)
+        c2 += abs(c1)
+        c1 = 0
+    if r2 > mask.shape[0]:
+        mask = np.append(mask, np.zeros([r2 - mask.shape[0], mask.shape[1]]), 0)
+        r2 = mask.shape[0]
+    if c2 > mask.shape[1]:
+        mask = np.append(mask, np.zeros([mask.shape[0], c2 - mask.shape[1]]), 1)
+        c2 = mask.shape[1]
+
+    # Make a square around the defect
+    new_mask = mask[r1:r2, c1:c2]
+
+    # Check and correct if new_mask is odd along one of the axes
+    if new_mask.shape[0] % 2 != 0:
+        new_mask = np.append(new_mask, np.zeros([1, new_mask.shape[1]]), 0)
+    if new_mask.shape[1] % 2 != 0:
+        new_mask = np.append(new_mask, np.zeros([new_mask.shape[0], 1]), 1)
+
+    def split_vertical():
+        # Check symmetry along the vertical axis (left-right)
+        mask_left, mask_right = np.split(new_mask, 2, axis=1)
+        mask_left = mask_left.astype(np.int8)
+        mask_right = mask_right.astype(np.int8)
+        reflect_mask_left = np.flip(mask_left, axis=1)
+        reflect_mask_left = reflect_mask_left.astype(np.int8)
+        sym = np.abs(mask_right - reflect_mask_left)
+        ratio = 2 * np.sum(sym) / area
+        return ratio
+
+    def split_horizontal():
+        # Check symmetry along the horizontal axis (up-down)
+        mask_up, mask_down = np.split(new_mask, 2, axis=0)
+        mask_up = mask_up.astype(np.int8)
+        mask_down = mask_down.astype(np.int8)
+        reflect_mask_up = np.flip(mask_up, axis=0)
+        reflect_mask_up = reflect_mask_up.astype(np.int8)
+        sym = np.abs(mask_down - reflect_mask_up)
+        ratio = 2 * np.sum(sym) / area
+        return ratio
+
+    def split_downwards_diagonal():
+        # Check symmetry along the diagonal (left-down)
+        mask_up = np.triu(new_mask)
+        mask_up = mask_up.astype(np.int8)
+        rotate_mask_up = np.transpose(mask_up)
+        rotate_mask_up = rotate_mask_up.astype(np.int8)
+        mask_down = np.tril(new_mask)
+        mask_down = mask_down.astype(np.int8)
+        sym = np.abs(mask_down - rotate_mask_up)
+        ratio = 2 * np.sum(sym) / area
+        return ratio
+
+    def split_upwards_diagonal():
+        # Check symmetry along the diagonal (left-up)
+        new_new_mask = np.flip(new_mask, axis=1)
+        mask_up = np.triu(new_new_mask)
+        mask_up = mask_up.astype(np.int8)
+        rotate_mask_up = np.transpose(mask_up)
+        rotate_mask_up = rotate_mask_up.astype(np.int8)
+        mask_down = np.tril(new_new_mask)
+        mask_down = mask_down.astype(np.int8)
+        sym = np.abs(mask_down - rotate_mask_up)
+        ratio = 2 * np.sum(sym) / area
+        return ratio
+
+    ratio = mean([split_vertical(), split_horizontal(), split_downwards_diagonal(), split_upwards_diagonal()])
+    return ratio
+
+
+def calculate_symmetry_level(asymmetry_ratio):
+    if asymmetry_ratio < 0.1:
+        return 1  # symmetric
+    elif asymmetry_ratio < 0.3:
+        return 2  # symmetric along only one axis
     else:
-        return "3"
+        return 3  # asymmetric
+
 
 
 def process_images_with_masks(image, mask):
@@ -316,9 +412,9 @@ def process_images(file_data, path_image, path_mask, feature_names):
             # Read the image and mask
             im = cv2.imread(file_image)
             mask = cv2.imread(file_image_mask, cv2.IMREAD_GRAYSCALE)
-            if im.shape[:2] != mask.shape[:2]:
-                print(f"Skipping image {image_id[i]}: Image and mask dimensions do not match.")
-                continue
+            #if im.shape[:2] != mask.shape[:2]:
+            #    print(f"Skipping image {image_id[i]}: Image and mask dimensions do not match.")
+            #    continue
             # Check if the mask has any contour other than just a black background
             contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             if len(contours) == 0:
@@ -338,3 +434,4 @@ def process_images(file_data, path_image, path_mask, feature_names):
     df_features = pd.DataFrame(features, columns=feature_names)
     df_features['image_id'] = valid_image_ids
     return df_features
+

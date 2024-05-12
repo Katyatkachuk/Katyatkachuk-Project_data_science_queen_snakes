@@ -1,52 +1,30 @@
 import pickle
-import numpy as np
-import cv2  # Used for image operations if necessary
 
+# Assuming extract_features.py is in the same directory and has a function named extract_features
 from extract_features import extract_features
 
+# The function to classify new images. The image and mask are assumed to be loaded.
 def classify(img, mask):
-    """
-    Classifies an image based on extracted features and a pre-trained classifier.
+    # Resize the image etc, if you did that during training.
+    # ...
 
-    Args:
-        img (np.array): The image data as a NumPy array.
-        mask (np.array): The mask data as a NumPy array.
+    # Extract features (the same ones that you used for training).
+    # Ensure that the feature array is 2D: 1 row of features for 1 example.
+    x = extract_features(img, mask).reshape(1, -1)
 
-    Returns:
-        tuple: A tuple containing the predicted label and the probabilities for each class.
-    """
+    # Load the trained classifier.
+    # Make sure the file name matches the one you used when saving the model.
+    classifier = pickle.load(open('best_classifier.sav', 'rb'))
 
-    # img = cv2.resize(img, (256, 256))
-    # mask = cv2.resize(mask, (256, 256))
+    # Use it on this example to predict the label AND posterior probability.
+    pred_label = classifier.predict(x)
+    pred_prob = classifier.predict_proba(x)
 
-    # Extract features using the function defined in extract_features.py
-    features = extract_features(img, mask).reshape(1, -1)  
-
-    # Load the trained classifier
-    try:
-        with open(r"C:\Users\tettret\OneDrive - DFDS\Desktop\ITU\Data Science Project\Project_data_science_queen_snakes-3\Classifier_final\Classifier\fyp2024\classifier_7.sav", 'rb') as file:
-            classifier = pickle.load(file)
-    except FileNotFoundError:
-        print("Model file not found. Please ensure the model path is correct.")
-        return None, None
-    except Exception as e:
-        print(f"An error occurred while loading the model: {e}")
-        return None, None
-
-    # Predict the label and the posterior probability for the given image
-    pred_label = classifier.predict(features)
-    pred_prob = classifier.predict_proba(features)
-
-    # Print the results
-    print('Predicted label is:', pred_label)
-    print('Predicted probability is:', pred_prob)
-
+    # Uncomment below to print the results if needed.
+    # print('Predicted label is:', pred_label)
+    # print('Predicted probability is:', pred_prob)
     return pred_label, pred_prob
 
-# Example usage:
-
-img = cv2.imread(r"C:\Users\tettret\OneDrive - DFDS\Desktop\ITU\Data Science Project\Project_data_science_queen_snakes-3\Classifier_final\Classifier\data\images\images_original\PAT_31_43_129.png")
-mask = cv2.imread(r"C:\Users\tettret\OneDrive - DFDS\Desktop\ITU\Data Science Project\Project_data_science_queen_snakes-3\Classifier_final\Classifier\data\images\masks_original\PAT_31_43_129_mask.png", cv2.IMREAD_GRAYSCALE)
-label, probability = classify(img, mask)
-
-
+# Note: This code assumes that the function extract_features returns a NumPy array
+# that can be reshaped to 1 row for the classifier's predict and predict_proba methods.
+# You may need to adjust the reshape depending on the output of your feature extraction.
