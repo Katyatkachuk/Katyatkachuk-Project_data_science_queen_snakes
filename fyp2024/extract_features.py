@@ -45,18 +45,21 @@ def extract_features(image,mask):
     return features
 
 
+
 def check_symmetry(mask):
 
     """
-    Args:
-        img: The mask to process.
+     Args:
+        image: The image to process.
+        mask: Its mask.
 
     Returns:
         level of assymetry from 1 to 3
 
     """
     # Load the mask
-    #mask = cv2.imread(image, cv2.IMREAD_GRAYSCALE)
+    # mask = cv2.imread(image, cv2.IMREAD_GRAYSCALE)
+    # Resize mask to match image size if they don't match
 
     area = np.sum(mask)  # defect area
     com = ndimage.center_of_mass(mask)  # find the center of mass
