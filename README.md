@@ -44,7 +44,7 @@ Review the classification results and any associated metrics to assess the perfo
    - New_masks where each image is annotated by at least two people;
    - Queen_snakes_masks - masks annotated first time by one person;
    - data - contains matadata file and a folder with images and masks for evaluation a classifier;
-   - fyp2024 - contains 10 classifiers with their folds (in Trained_classifiers folder), selected classifier(Queen_Snakes_classifier.sav), code used to produce analytics for classifiers(classifier_analytics.ipynb),feature file for evaluation a classifier, full classider source file (as well as separate py.files for process images, traine and valuation of the classifer and predictions), predictions_new.xlsx.file with probability of cancer results and a requirements.txt file;
+   - fyp2024 - contains 10 classifiers with their folds (in Trained_classifiers folder), selected classifier(Queen_Snakes_classifier.sav), code used to produce analytics for classifiers and features(classifier_analytics.ipynb, feature_analytics.ipynb), Krippendorf.ipynb for maasuring accuracy of features, feature file for evaluation a classifier, full classider source file (as well as separate py.files for process images, train and evaluation of the classifer and predictions), predictions_new.xlsx.file with probability of cancer results and a requirements.txt file;
    - .gitignore - excludes the datasets for training a classifier;
    - Queen_snakes_annotation_comments.md with our findings about the annotation process;
    - Queen_snakes_anotations_manual where only our manual measurements are stored;
