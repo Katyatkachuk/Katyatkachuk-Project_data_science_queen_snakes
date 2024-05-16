@@ -31,11 +31,20 @@ The skin lesion classifier project aims to develop a computer-based system for a
  The classifier will analyze the images and provide predictions on whether the lesions are cancerous or non-cancerous.
 Review the classification results and any associated metrics to assess the performance of the classifier.
 
+##### Remarks: 
+1. Provide paths to train images and masks, and run cell 1 and 2 to process images and create classifiers.
+2. You can also use:
+   - process_images.py - to extract features for training dataset and save them in the csv file
+   - train_classifiers.py - to train classifier using the csv file with measured features
+   - evaluate_classifier.py - to check the probability of skin lesion  to be cancerous based on the provided image and mask
+   - predictions.py - to evaluate the probability of skin lesion  to be cancerous based on the provided images and masks stored in separate folders. Outputs the xlsx file with image and patient ids, probability of being cancerous and the actual label.
+
+
 #### 3. Project content:
    - New_masks where each image is annotated by at least two people;
    - Queen_snakes_masks - masks annotated first time by one person;
    - data - contains matadata file and a folder with images and masks for evaluation a classifier;
-   - fyp2024 - contains 10 classifiers with their folds, feature file for evaluation a classifier, full classider source file (as well as separate py.files for process images, traine and valuation of the classifer and predictions), predictions_new.xlsx.file with probability of cancer results and a requirements.txt file;
+   - fyp2024 - contains 10 classifiers with their folds (in Trained_classifiers folder), selected classifier(Queen_Snakes_classifier.sav), code used to produce analytics for classifiers(classifier_analytics.ipynb),feature file for evaluation a classifier, full classider source file (as well as separate py.files for process images, traine and valuation of the classifer and predictions), predictions_new.xlsx.file with probability of cancer results and a requirements.txt file;
    - .gitignore - excludes the datasets for training a classifier;
    - Queen_snakes_annotation_comments.md with our findings about the annotation process;
    - Queen_snakes_anotations_manual where only our manual measurements are stored;
