@@ -24,7 +24,7 @@ The skin lesion classifier project aims to develop a computer-based system for a
 1. Navigate to the classifier_full.ipynb in the fyp2024 folder and open it.
 2. Provide the paths to the folders of dermatoscopic images of skin lesions and their masks as input to evaluate the classifier(3rd cell).
 3. Run the main script (3rd cell) to evaluate the classifier.
-4. Run the main script (4th cell) to see the comfusion matrix visualisation.
+4. Run the main script (4th cell) to see the confusion matrix visualisation.
 5. Provide the the same paths as in point 2 to generate the predictions of the cancer(5th cell).
 6. Run the main script (5th cell) to see the probability of cancer in the generated predictions_new.xlsx.file.
  
